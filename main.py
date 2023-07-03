@@ -11,7 +11,7 @@ from selenium.webdriver.support.ui import Select
 
 # specifies the path to the chromedriver.exe
 driver_path = dp
-driver = webdriver.Chrome(driver_path)
+driver = webdriver.Chrome(driver_path)  
 url = "https://racing.hkjc.com/racing/information/English/Racing/LocalResults.aspx?RaceDate=2022/07/16&Racecourse=ST&RaceNo=1"
 
 # Load Jockey website   
@@ -20,7 +20,7 @@ time.sleep(randrange(5, 10))
 race_dates = []
 
 # open csv file with list of last season race date and add to csv list
-with open('2022 Race Dates.csv', newline='') as File:
+with open('2023 Race Dates.csv', newline='') as File:
     reader = csv.DictReader(File)
     for row in reader:
         race_dates.append(row['Dates'])

@@ -7,11 +7,11 @@ from random import randrange
 import pandas as pd
 from bs4 import BeautifulSoup
 from selenium.webdriver.support.ui import Select
-
+from selenium.webdriver.common.by import By
 
 # specifies the path to the chromedriver.exe
 driver_path = dp
-driver = webdriver.Chrome(driver_path)  
+driver = webdriver.Chrome()  
 url = "https://racing.hkjc.com/racing/information/English/Racing/LocalResults.aspx?RaceDate=2022/07/16&Racecourse=ST&RaceNo=1"
 
 # Load Jockey website   
@@ -29,28 +29,44 @@ with open('2023 Race Dates.csv', newline='') as File:
 with open('Race.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         # Write row headings
-        fieldnames = ['Date', 'Horse', 'Jockey', 'Trainer', 'LBW']
+        fieldnames = ['Date', 'Horse', 'Jockey', 'Trainer', 'Track Condition', 'LBW']
         writer.writerow(fieldnames)
 
 # Function to scrape each page
 def scrape_page():    
     # Load beatiful soup to find the table
-    soup = BeautifulSoup(driver.page_source, 'lxml')    
+    soup = BeautifulSoup(driver.page_source, 'html.parser')    
     # All table data stored in race variable
     tables = soup.find_all('table')
     dfs = pd.read_html(str(tables))
     race = dfs[2]
     number_horses = (len(race))
 
-
-    # Get race title and take date
-    race_title_element = driver.find_element_by_class_name('f_fl')
+    # Get race title, date and track condition
+    race_title_element = driver.find_element(By.CLASS_NAME, 'f_fl')
     race_title =  (race_title_element.text)
     dates = []
     dates.extend([race_title[15:25]] * number_horses)
+    # track condition (tc)
+    trackConditions = []
+    try:
+        trackCondition = (driver.find_element(By.XPATH, '//*[@id="innerContent"]/div[2]/div[4]/table/tbody/tr[2]/td[3]').text)
+        if trackCondition == 'YIELDING' or trackCondition =='YIELDING TO SOFT' or trackCondition == 'SOFT' or trackCondition == 'HEAVY':
+            trackConditions.extend([trackCondition] * number_horses)
+        else: 
+            blank = ''
+            trackConditions.extend([None] * number_horses)
+        
+    except: 
+        print("tc error")
+        pass
+        
 
     # Get tidy horse names
-    horses_messy = race['Horse'].values
+    try:
+        horses_messy = race['Horse'].values
+    except:
+        print('horses_messy error')
     horses = []
     for h in horses_messy:
         horses.append(h[:-6])
@@ -58,10 +74,10 @@ def scrape_page():
     # Get Jockeys, Trainers and lbw result
     jockeys = race['Jockey'].values
     trainers = race['Trainer'].values
-    lbws = race['LBW'].values       
+    lbws = race['LBW'].values  
 
     # Combine lists to race rows
-    rows = zip(dates, horses, jockeys, trainers, lbws)
+    rows = zip(dates, horses, jockeys, trainers, trackConditions, lbws)
 
     # Write to excel
     with open('Race.csv', 'a', newline='') as file:
@@ -69,23 +85,25 @@ def scrape_page():
         writer.writerows(rows)
 
 for d in race_dates:
-    dropdown = Select(driver.find_element_by_id("selectId"))
+    dropdown = Select(driver.find_element(By.ID, "selectId"))
     dropdown.select_by_value(d)
-    go_button = driver.find_element_by_xpath('//*[@id="submitBtn"]/img')
+    go_button = driver.find_element(By.XPATH,'//*[@id="submitBtn"]/img')
     go_button.click()
 
     # Scrape the content to csv
-    scrape_page()
-    
+    try:
+        scrape_page()
+    except:
+        print("Error trying to scrape at date: ", d)
     # Find number of races. We count number of td tags in the racecard class and takeaway 2
-    parentDiv = driver.find_element_by_xpath('//*[@id="innerContent"]/div[2]/div[2]/table')
-    count = len(parentDiv.find_elements_by_tag_name("td"))
+    parentDiv = driver.find_element(By.XPATH, '//*[@id="innerContent"]/div[2]/div[2]/table')
+    count = len(parentDiv.find_elements(By.TAG_NAME, "td"))
 
     # Cycle through each race
     for c in range(count)[3:14]:
         x_path = '//*[@id="innerContent"]/div[2]/div[2]/table/tbody/tr[1]/td[' + str(c) + ']/a/img'
         try:
-            button = driver.find_element_by_xpath(x_path)
+            button = driver.find_element(By.XPATH, x_path)
             button.click()
 
         except:

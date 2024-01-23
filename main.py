@@ -29,7 +29,7 @@ with open('2023 Race Dates.csv', newline='') as File:
 with open('Race.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         # Write row headings
-        fieldnames = ['Date', 'Horse', 'Jockey', 'Trainer', 'LBW']
+        fieldnames = ['Date', 'Horse', 'Jockey', 'Trainer', 'Track Condition', 'LBW']
         writer.writerow(fieldnames)
 
 # Function to scrape each page
@@ -49,6 +49,19 @@ def scrape_page():
     dates = []
     dates.extend([race_title[15:25]] * number_horses)
 
+# track condition (tc)
+    trackConditions = []
+    try:
+        trackCondition = driver.find_element_by_xpath('//*[@id="innerContent"]/div[2]/div[4]/table/tbody/tr[2]/td[3]')
+        if trackCondition == 'YIELDING' or trackCondition =='YIELDING TO SOFT' or trackCondition == 'SOFT' or trackCondition == 'HEAVY':
+            trackConditions.extend([trackCondition] * number_horses)
+        else: 
+            trackConditions.extend([None] * number_horses)
+
+    except: 
+        print("tc error")
+        pass
+
     # Get tidy horse names
     horses_messy = race['Horse'].values
     horses = []
@@ -61,7 +74,7 @@ def scrape_page():
     lbws = race['LBW'].values       
 
     # Combine lists to race rows
-    rows = zip(dates, horses, jockeys, trainers, lbws)
+    rows = zip(dates, horses, jockeys, trainers, trackConditions, lbws)
 
     # Write to excel
     with open('Race.csv', 'a', newline='') as file:
@@ -70,7 +83,10 @@ def scrape_page():
 
 for d in race_dates:
     dropdown = Select(driver.find_element_by_id("selectId"))
-    dropdown.select_by_value(d)
+    try:
+        dropdown.select_by_value(d)
+    except:
+        print(d, "no good date")
     go_button = driver.find_element_by_xpath('//*[@id="submitBtn"]/img')
     go_button.click()
 

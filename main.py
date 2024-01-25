@@ -26,7 +26,7 @@ with open('Dates to Scrape.csv', newline='') as File:
         race_dates.append(row['Dates'])
 
 # Create csv file
-with open('Race.csv', 'w', newline='') as file:
+with open('Scraped Data.csv', 'w', newline='') as file:
         writer = csv.writer(file)
         # Write row headings
         fieldnames = ['Date', 'Horse', 'Jockey', 'Trainer', 'Track Condition', 'LBW']

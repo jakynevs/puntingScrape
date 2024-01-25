@@ -20,7 +20,7 @@ time.sleep(randrange(5, 10))
 race_dates = []
 
 # open csv file with list of last season race date and add to csv list
-with open('2023 Race Dates.csv', newline='') as File:
+with open('Dates to Scrape.csv', newline='') as File:
     reader = csv.DictReader(File)
     for row in reader:
         race_dates.append(row['Dates'])

@@ -95,7 +95,7 @@ def scrape_page():
     rows = zip(dates, horses, jockeys, trainers, trackConditions, lbws)
 
     # Write to excel
-    with open('Race.csv', 'a', newline='') as file:
+    with open('Scraped Data.csv', 'a', newline='') as file:
         writer = csv.writer(file)
         writer.writerows(rows)
 

@@ -8,6 +8,8 @@ import pandas as pd
 from bs4 import BeautifulSoup
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+
 
 # specifies the path to the chromedriver.exe
 driver_path = dp
@@ -109,8 +111,19 @@ for d in race_dates:
     except:
         print("Error trying to scrape at date: ", d)
     # Find number of races. We count number of td tags in the racecard class and takeaway 2
-    parentDiv = driver.find_element(By.XPATH, '//*[@id="innerContent"]/div[2]/div[2]/table')
-    count = len(parentDiv.find_elements(By.TAG_NAME, "td"))
+    try:
+        parentDiv = driver.find_element(By.XPATH, '//*[@id="innerContent"]/div[2]/div[2]/table')
+    except NoSuchElementException:
+        try:
+            parentDiv = driver.find_element(By.XPATH, '//*[@id="innerContent"]/div[2]/div[2]/table/tbody/tr')
+        except NoSuchElementException:
+            parentDiv = None
+    
+    if parentDiv == None:
+        print(f"Can't find parent race element for {d}")
+        count = 0
+    else:
+        count = len(parentDiv.find_elements(By.TAG_NAME, "td"))
 
     # Cycle through each race
     for c in range(count)[3:14]:
@@ -129,4 +142,4 @@ for d in race_dates:
         except:
             driver.back()
             continue
-
+        

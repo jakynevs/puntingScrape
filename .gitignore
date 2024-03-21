@@ -1,2 +1,6 @@
 test.ipynb
 constants.py
+Dates to Scrape.csv
+Scraped Data.csv
+node_modules
+venv/

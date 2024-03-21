@@ -1,18 +1,16 @@
 # import parameters
 import time
 import csv
-from constants import * 
-from selenium import webdriver
-from random import randrange
 import pandas as pd
+from io import StringIO
 from bs4 import BeautifulSoup
+from selenium import webdriver
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
-
+from random import randrange
 
 # specifies the path to the chromedriver.exe
-driver_path = dp
 driver = webdriver.Chrome()  
 url = "https://racing.hkjc.com/racing/information/English/Racing/LocalResults.aspx?RaceDate=2022/07/16&Racecourse=ST&RaceNo=1"
 
@@ -21,26 +19,15 @@ driver.get(url)
 time.sleep(randrange(5, 10))
 race_dates = []
 
-# open csv file with list of last season race date and add to csv list
-with open('Dates to Scrape.csv', newline='') as File:
-    reader = csv.DictReader(File)
-    for row in reader:
-        race_dates.append(row['Dates'])
-
-# Create csv file
-with open('Scraped Data.csv', 'w', newline='') as file:
-        writer = csv.writer(file)
-        # Write row headings
-        fieldnames = ['Date', 'Horse', 'Jockey', 'Trainer', 'Track Condition', 'LBW']
-        writer.writerow(fieldnames)
-
 # Function to scrape each page
 def scrape_page():    
     # Load beatiful soup to find the table
     soup = BeautifulSoup(driver.page_source, 'html.parser')    
     # All table data stored in race variable
     tables = soup.find_all('table')
-    dfs = pd.read_html(str(tables))
+    html_string_io = StringIO(str(tables))
+    
+    dfs = pd.read_html(html_string_io)
     race = dfs[2]
     number_horses = (len(race))
 
@@ -49,6 +36,7 @@ def scrape_page():
     race_title =  (race_title_element.text)
     dates = []
     dates.extend([race_title[15:25]] * number_horses)
+    
     # track condition (tc)
     trackConditions = []
     try:
@@ -56,32 +44,18 @@ def scrape_page():
         if trackCondition == 'YIELDING' or trackCondition =='YIELDING TO SOFT' or trackCondition == 'SOFT' or trackCondition == 'HEAVY':
             trackConditions.extend([trackCondition] * number_horses)
         else: 
-            blank = ''
             trackConditions.extend([None] * number_horses)
         
-    except: 
-        print("tc error")
+    except Exception as e:
+        print(f"Error trying to scrape track condition. Details: {str(e)}")
         pass
         
-
-# track condition (tc)
-    trackConditions = []
-    try:
-        trackCondition = driver.find_element_by_xpath('//*[@id="innerContent"]/div[2]/div[4]/table/tbody/tr[2]/td[3]')
-        if trackCondition == 'YIELDING' or trackCondition =='YIELDING TO SOFT' or trackCondition == 'SOFT' or trackCondition == 'HEAVY':
-            trackConditions.extend([trackCondition] * number_horses)
-        else: 
-            trackConditions.extend([None] * number_horses)
-
-    except: 
-        print("tc error")
-        pass
-
     # Get tidy horse names
     try:
         horses_messy = race['Horse'].values
-    except:
-        print('horses_messy error')
+    except Exception as e:
+        print(f"horses_messy error: {str(e)}")
+        
     horses = []
     for h in horses_messy:
         horses.append(h[:-6])
@@ -99,17 +73,32 @@ def scrape_page():
         writer = csv.writer(file)
         writer.writerows(rows)
 
+# open csv file with list of last season race date and add to csv list
+with open('Dates to Scrape.csv', newline='') as File:
+    reader = csv.DictReader(File)
+    for row in reader:
+        race_dates.append(row['Dates'])
+
+# Create csv file
+with open('Scraped Data.csv', 'w', newline='') as file:
+        writer = csv.writer(file)
+        # Write row headings
+        fieldnames = ['Date', 'Horse', 'Jockey', 'Trainer', 'Track Condition', 'LBW']
+        writer.writerow(fieldnames)
+
+
 for d in race_dates:
-    dropdown = Select(driver.find_element_by_id("selectId"))
+    dropdown = Select(driver.find_element(By.ID, "selectId"))
     dropdown.select_by_value(d)
-    go_button = driver.find_element_by_xpath('//*[@id="submitBtn"]/img')
+    go_button = driver.find_element(By.XPATH, '//*[@id="submitBtn"]/img')
     go_button.click()
 
     # Scrape the content to csv
     try:
         scrape_page()
-    except:
-        print("Error trying to scrape at date: ", d)
+    except Exception as e:
+        print(f"Error trying to scrape at date: {d}. Details: {str(e)}")
+
     # Find number of races. We count number of td tags in the racecard class and takeaway 2
     try:
         parentDiv = driver.find_element(By.XPATH, '//*[@id="innerContent"]/div[2]/div[2]/table')

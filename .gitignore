@@ -4,3 +4,4 @@ Dates to Scrape.csv
 Scraped Data.csv
 node_modules
 venv/
+node_modules/
